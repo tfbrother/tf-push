@@ -28,7 +28,6 @@ func wsHande(w http.ResponseWriter, r *http.Request) {
 		wsConn *websocket.Conn
 		err    error
 		conn   *connection.Connection
-		data   []byte
 	)
 	wsConn, err = upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -39,7 +38,7 @@ func wsHande(w http.ResponseWriter, r *http.Request) {
 	connId := atomic.AddUint64(&serverId, 1)
 
 	if conn, err = connection.InitConnection(connId, wsConn); err != nil {
-		goto ERR
+		wsConn.Close()
 	}
 
 	mgr.AddConn(conn)
@@ -56,18 +55,6 @@ func wsHande(w http.ResponseWriter, r *http.Request) {
 			time.Sleep(1 * time.Second)
 		}
 	}()
-
-	for {
-		if data, err = conn.ReadMessage(); err != nil {
-			goto ERR
-		}
-
-		if err = conn.WriteMessage(data); err != nil {
-			goto ERR
-		}
-	}
-ERR:
-	wsConn.Close()
 }
 
 //推送接口，基于HTTP协议

@@ -4,6 +4,7 @@
 package connection
 
 import (
+	"errors"
 	"strconv"
 	"sync"
 )
@@ -12,6 +13,7 @@ type ConnMgr struct {
 	rwMux   sync.RWMutex
 	num     uint64 //全局的连接数量
 	buckets []*Bucket
+	inChan  chan []byte
 }
 
 //添加连接
@@ -37,10 +39,24 @@ func (connMgr *ConnMgr) DelConn(conn *Connection) (err error) {
 
 //给所有的在线连接推送消息
 func (connMgr *ConnMgr) PushAll(msg []byte) (err error) {
-	connMgr.rwMux.Lock()
-	defer connMgr.rwMux.Unlock()
-	for _, bucket := range connMgr.buckets {
-		bucket.PushAll([]byte(string(msg) + strconv.Itoa(bucket.bucketId)))
+	select {
+	case connMgr.inChan <- msg:
+	default:
+		err = errors.New("inChan is full")
+	}
+
+	return
+}
+
+//给所有的在线连接推送消息
+func (connMgr *ConnMgr) pushAll() (err error) {
+	for {
+		select {
+		case msg := <-connMgr.inChan: //读取信息
+			for _, bucket := range connMgr.buckets {
+				bucket.PushAll([]byte(string(msg) + strconv.Itoa(bucket.bucketId)))
+			}
+		}
 	}
 
 	return
@@ -56,11 +72,14 @@ func InitConnMgr(bucketLen int) (mgr *ConnMgr) {
 	mgr = &ConnMgr{
 		buckets: make([]*Bucket, bucketLen),
 		num:     0,
+		inChan:  make(chan []byte, 1000), //1000个缓冲
 	}
 
 	for bucketIdx, _ := range mgr.buckets {
 		mgr.buckets[bucketIdx] = InitBucket(bucketIdx) // 初始化Bucket
 	}
+
+	go mgr.pushAll()
 
 	return
 }

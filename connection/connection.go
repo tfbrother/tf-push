@@ -62,6 +62,7 @@ func (conn *Connection) Close() {
 	if !conn.isClosed {
 		conn.isClosed = true
 		close(conn.closeChan)
+		conn.wsConn.Close()
 	}
 	conn.mux.Unlock()
 }
