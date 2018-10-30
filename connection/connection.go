@@ -1,25 +1,30 @@
 package connection
 
-import "github.com/gorilla/websocket"
-import "sync"
-import "errors"
+import (
+	"errors"
+	"sync"
+
+	"github.com/gorilla/websocket"
+)
 
 type Connection struct {
 	wsConn    *websocket.Conn
-	inChan    chan []byte
-	outChan   chan []byte
-	closeChan chan byte
-	isClosed  bool
+	inChan    chan []byte //接收队列
+	outChan   chan []byte //发送队列
+	closeChan chan byte   //是否关闭chan
+	isClosed  bool        //是否关闭
 	mux       sync.Mutex
+	connId    uint64
 }
 
-func InitConnection(ws *websocket.Conn) (conn *Connection, err error) {
+func InitConnection(connId uint64, ws *websocket.Conn) (conn *Connection, err error) {
 	conn = &Connection{
 		wsConn:    ws,
 		inChan:    make(chan []byte, 1000),
 		outChan:   make(chan []byte, 1000),
 		closeChan: make(chan byte, 1),
 		isClosed:  false,
+		connId:    connId,
 	}
 
 	//启动读协程
