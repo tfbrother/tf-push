@@ -21,8 +21,8 @@ var (
 
 )
 
-var mgr = connection.InitConnMgr(100)
 var err = connection.InitStats()
+var mgr = connection.InitConnMgr(100)
 
 func wsHande(w http.ResponseWriter, r *http.Request) {
 	var (
