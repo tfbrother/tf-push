@@ -23,6 +23,7 @@ func (connMgr *ConnMgr) AddConn(conn *Connection) (err error) {
 	connMgr.num++
 	bucket := connMgr.GetBucket(conn)
 	bucket.AddConn(conn)
+	G_stats.IncrConnNum()
 	return
 }
 
@@ -33,7 +34,7 @@ func (connMgr *ConnMgr) DelConn(conn *Connection) (err error) {
 	connMgr.num--
 	bucket := connMgr.GetBucket(conn)
 	bucket.DelConn(conn.connId)
-
+	G_stats.IncrConnNum()
 	return
 }
 
@@ -77,6 +78,7 @@ func InitConnMgr(bucketLen int) (mgr *ConnMgr) {
 
 	for bucketIdx, _ := range mgr.buckets {
 		mgr.buckets[bucketIdx] = InitBucket(bucketIdx) // 初始化Bucket
+		G_stats.IncrBucketNum()
 	}
 
 	go mgr.pushAll()

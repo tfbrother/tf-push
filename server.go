@@ -22,6 +22,7 @@ var (
 )
 
 var mgr = connection.InitConnMgr(100)
+var err = connection.InitStats()
 
 func wsHande(w http.ResponseWriter, r *http.Request) {
 	var (
@@ -74,9 +75,24 @@ func pushAll(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(msg))
 }
 
+// 统计
+func handleStats(resp http.ResponseWriter, req *http.Request) {
+	var (
+		data []byte
+		err  error
+	)
+
+	if data, err = connection.G_stats.Dump(); err != nil {
+		return
+	}
+
+	resp.Write(data)
+}
+
 func main() {
 	http.HandleFunc("/connect", wsHande)
 	http.HandleFunc("/pushAll", pushAll)
+	http.HandleFunc("/stats", handleStats)
 
 	http.ListenAndServe("0.0.0.0:7777", nil)
 }

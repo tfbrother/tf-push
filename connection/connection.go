@@ -46,6 +46,7 @@ func (conn *Connection) ReadMessage() (data []byte, err error) {
 func (conn *Connection) WriteMessage(data []byte) (err error) {
 	select {
 	case conn.outChan <- data:
+		G_stats.IncrPushMsgNum()
 	case <-conn.closeChan:
 		err = errors.New("conn is closed")
 	}
